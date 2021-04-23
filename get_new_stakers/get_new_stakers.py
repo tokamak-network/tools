@@ -3,6 +3,7 @@ import sys
 import time
 import pprint
 from web3 import Web3, WebsocketProvider
+from datetime import datetime
 import asyncio
 
 RPC_ENDPOINT = "INSERT YOUR URL"
@@ -38,21 +39,33 @@ def get_stakers(w3, from_block, to_block):
         "topics": [event_signature_hash]
     })
 
-    txs = list(map(lambda x: x["transactionHash"].hex(), logs))
+    txs = list(map(lambda x: (x["blockNumber"], x["transactionHash"].hex()), logs))
 
     stakers = set([])
+    stakers_block = {}
 
     for tx in txs:
-        receipt = w3.eth.getTransactionReceipt(tx)
+        receipt = w3.eth.getTransactionReceipt(tx[1])
         
         tmp = instance.events.Deposited().processReceipt(receipt)
-        stakers.add(tmp[0]["args"]["depositor"])
-    return stakers
+        depositor = tmp[0]["args"]["depositor"]
+        stakers.add(depositor)
+        if (depositor in stakers_block and stakers_block[depositor] > tx[0]) or depositor not in stakers_block:
+            stakers_block[depositor] = int(tx[0])
+    return (stakers, stakers_block)
 
-original_stakers = get_stakers(w3, BLOCK_NUMBER_DEPOSIT_MANAGER_CREATED, BLOCK_NUMBER_EVENT_START)
+original_stakers, original_stakers_blocks = get_stakers(w3, BLOCK_NUMBER_DEPOSIT_MANAGER_CREATED, BLOCK_NUMBER_EVENT_START)
 
 current_block_number = w3.eth.getBlock("latest")["number"]
-new_stakers = get_stakers(w3, BLOCK_NUMBER_EVENT_START-1, current_block_number)
+new_stakers, new_stakers_block = get_stakers(w3, BLOCK_NUMBER_EVENT_START-1, current_block_number)
 new_stakers = new_stakers - original_stakers
 
-print(new_stakers)
+new_stakers = sorted(new_stakers, key=lambda x: new_stakers_block[x])
+
+for new_staker in new_stakers:
+    block = w3.eth.getBlock(new_stakers_block[new_staker])
+    date_time = datetime.fromtimestamp(block["timestamp"])
+    print(f"{new_staker}: {new_stakers_block[new_staker]}, {date_time}")
+
+date_time = datetime.fromtimestamp(current_block_number)    
+print(f"current block: {current_block_number}, {date_time}")
