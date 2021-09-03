@@ -138,7 +138,8 @@ def make_log(instance, event, receipt):
     log = ""
 
     block = w3.eth.getBlock(event["blockNumber"])
-    log += str(datetime.datetime.fromtimestamp(block["timestamp"]))
+    tz = datetime.timezone(datetime.timedelta(hours=9))
+    log += str(datetime.datetime.fromtimestamp(block["timestamp"], tz))
     log += "(KST) "
 
     if event["topics"][0].hex() == event_hash_deposited:
