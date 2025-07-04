@@ -1,3 +1,43 @@
+# 환경 설정 파일
 .endpoint
 .slack
+.env
+
+# 블록 추적 파일
 latest_block
+
+# Python 가상환경
+venv/
+env/
+ENV/
+.venv/
+
+# Python 캐시 및 바이트코드
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 결과 파일들 (스테이커 조회 결과)
+stakers_results_*.csv
+stakers_summary_*.txt
+stakers_results_*.json
+data/
+
+# IDE 설정
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 로그 파일
+*.log
+
+# 임시 파일
+*.tmp
+*.temp
+.DS_Store
+.cursorignore
+
+README.md.detail
