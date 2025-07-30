@@ -27,7 +27,7 @@ Monitors events from **DepositManager Contract** (`0x56E465f654393fa48f007Ed7346
 
 ### Technical Features
 - **Block Chunking**: Process 9,990 blocks at a time for stability (adjust based on RPC limitations)
-- **WTON/TON Conversion**: Accurate calculation with Decimal 27 units
+- **WTON Conversion**: Accurate calculation with Decimal 27 units
 - **Web3.py Compatibility**: Stability ensured using HTTP Provider
 - **Error Handling**: Continue processing even if individual blocks fail
 
