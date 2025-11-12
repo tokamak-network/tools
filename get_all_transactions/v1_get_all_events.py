@@ -21,8 +21,12 @@ PATH_DEPOSIT_MANAGER = "DepositManager.json"
 ADDRESS_SEIG_MANAGER = "0x0b55a0f463b6DEFb81c6063973763951712D0E5F"
 PATH_SEIG_MANAGER = "SeigManager.json"
 
-BLOCK_NUMBER_DEPOSIT_MANAGER_CREATED = 18417896 # After the contract patch is completed, the block that runs the update seigniorage
-BLOCK_NUMBER_SNAPSHOT = 23029214
+# BLOCK_NUMBER_DEPOSIT_MANAGER_CREATED = 18417896 # After the contract patch is completed, the block that runs the update seigniorage
+# BLOCK_NUMBER_SNAPSHOT = 23029214
+
+# Using https://etherscan.io/blockdateconverter
+BLOCK_NUMBER_DEPOSIT_MANAGER_CREATED = 23029214 # After the contract patch is completed, the block that runs the update seigniorage
+BLOCK_NUMBER_SNAPSHOT = 23780621
 
 # Block chunk size setting (number of blocks to read at once)
 BLOCK_CHUNK_SIZE = 9990
