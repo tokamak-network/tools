@@ -41,3 +41,6 @@ data/
 .cursorignore
 
 README.md.detail
+
+
+aggregate_staking_metrics/
