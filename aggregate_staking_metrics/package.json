@@ -1,0 +1,23 @@
+{
+  "name": "aggregate_staking_metrics",
+  "version": "1.0.0",
+  "description": "매일 00:00 UTC (09:00 KST) 기준으로 Basic Staking Metrics를 계산하는 Node.js 프로젝트입니다.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "calculate": "node calculate_metrics.js",
+    "prepare-blocks": "node prepare_block_numbers.js",
+    "upload-dune": "node upload_to_dune.js",
+    "test": "node test.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@duneanalytics/client-sdk": "^0.3.4",
+    "axios": "^1.13.2",
+    "csv-parse": "^6.1.0",
+    "csv-stringify": "^6.6.0",
+    "dotenv": "^17.2.3",
+    "web3": "^4.16.0"
+  }
+}
