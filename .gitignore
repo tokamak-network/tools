@@ -43,4 +43,12 @@ data/
 README.md.detail
 
 
-aggregate_staking_metrics/
+aggregate_staking_metrics/output/
+aggregate_staking_metrics/node_modules/
+aggregate_staking_metrics/.env
+aggregate_staking_metrics_from_raw/
+aggregate_staking_metrics/data/
+
+.github/workflows/
+example_subgraph/
+
