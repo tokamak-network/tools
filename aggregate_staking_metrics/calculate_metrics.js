@@ -11,7 +11,7 @@ const { stringify } = require('csv-stringify/sync');
 require('dotenv').config();
 
 const { contracts, layer2Candidates, constants } = require('./config/addresses');
-const { calculateDailyBlocks, calculateBlocksInPeriod } = require('./utils/blockCalculator');
+const { calculateDailyBlocks, calculateBlocksInPeriod, getBlockNumberForDate } = require('./utils/blockCalculator');
 const {
   callContractFunction,
   TOT_BALANCE_OF_ABI,
@@ -428,14 +428,37 @@ async function main() {
   // 각 날짜별 메트릭 계산
   for (let i = 0; i < dailyBlocks.length; i++) {
     const current = dailyBlocks[i];
-    const previous = i > 0 ? dailyBlocks[i - 1] : null;
+    let previousBlock = null;
+
+    // 이전 블록 번호 찾기
+    if (i > 0) {
+      // 이전 날짜가 있으면 그 블록 번호 사용
+      previousBlock = dailyBlocks[i - 1].blockNumber;
+    } else {
+      // 첫 번째 날짜인 경우, 이전 날짜(하루 전)의 0시 블록 번호 계산
+      try {
+        const currentDate = new Date(current.date + 'T00:00:00Z');
+        const previousDate = new Date(currentDate);
+        previousDate.setUTCDate(previousDate.getUTCDate() - 1);
+
+        console.log(`\n📅 Calculating previous block for first date: ${current.date}`);
+        console.log(`   Previous date: ${previousDate.toISOString().split('T')[0]}`);
+
+        previousBlock = await getBlockNumberForDate(previousDate, web3);
+        console.log(`   ✅ Previous block number: ${previousBlock}`);
+      } catch (error) {
+        console.error(`   ⚠️  Could not calculate previous block: ${error.message}`);
+        console.error(`   Continuing with previousBlock = null`);
+        previousBlock = null;
+      }
+    }
 
     try {
       const metrics = await calculateMetricsForDate(
         web3,
         subgraph,
         current.date,
-        previous?.blockNumber,
+        previousBlock,
         current.blockNumber
       );
 
