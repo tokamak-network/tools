@@ -307,6 +307,161 @@ class SubgraphClient {
       return '0';
     }
   }
+
+  /**
+   * 특정 기간의 Withdrawals 이벤트 합계 (페이지네이션 지원)
+   * @param {number|string} fromBlock - 시작 블록 번호
+   * @param {number|string} toBlock - 종료 블록 번호
+   * @param {boolean} includeDetails - 상세 정보 포함 여부
+   * @returns {Promise<string|Object>} 총 출금 금액 (문자열) 또는 상세 정보 객체
+   */
+  async getTotalWithdrawalsAmount(fromBlock, toBlock, includeDetails = false) {
+    const pageSize = 1000; // The Graph의 최대 limit
+    let total = BigInt(0);
+    let lastTimestamp = null;
+    let hasMore = true;
+    let allEvents = [];
+    let pageCount = 0;
+
+    try {
+      while (hasMore) {
+        pageCount++;
+
+        // timestamp 기준으로 desc 정렬하므로, timestamp_lt를 사용하여 페이지네이션
+        const query = lastTimestamp ? `
+          query ($fromBlock: BigInt!, $toBlock: BigInt!, $first: Int!, $lastTimestamp: BigInt!) {
+            withdrawals(
+              where: {
+                transaction_: {
+                  blockNumber_gte: $fromBlock
+                  blockNumber_lte: $toBlock
+                }
+                timestamp_lt: $lastTimestamp
+              }
+              orderBy: timestamp
+              orderDirection: desc
+              first: $first
+            ) {
+              id
+              amount
+              timestamp
+              eventName
+              user {
+                id
+              }
+              candidate {
+                name
+              }
+              transaction {
+                id
+                blockNumber
+              }
+            }
+          }
+        ` : `
+          query ($fromBlock: BigInt!, $toBlock: BigInt!, $first: Int!) {
+            withdrawals(
+              where: {
+                transaction_: {
+                  blockNumber_gte: $fromBlock
+                  blockNumber_lte: $toBlock
+                }
+              }
+              orderBy: timestamp
+              orderDirection: desc
+              first: $first
+            ) {
+              id
+              amount
+              timestamp
+              eventName
+              user {
+                id
+              }
+              candidate {
+                name
+              }
+              transaction {
+                id
+                blockNumber
+              }
+            }
+          }
+        `;
+
+        const variables = lastTimestamp
+          ? {
+              fromBlock: fromBlock.toString(),
+              toBlock: toBlock.toString(),
+              first: pageSize,
+              lastTimestamp: lastTimestamp.toString()
+            }
+          : {
+              fromBlock: fromBlock.toString(),
+              toBlock: toBlock.toString(),
+              first: pageSize
+            };
+
+        const result = await this.query(query, variables);
+
+        // 에러 체크
+        if (result.errors) {
+          console.error('GraphQL Errors:', JSON.stringify(result.errors, null, 2));
+          throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
+        }
+
+        if (!result.data?.withdrawals || result.data.withdrawals.length === 0) {
+          hasMore = false;
+          break;
+        }
+
+        const events = result.data.withdrawals;
+
+        // 금액 합산
+        for (const withdrawal of events) {
+          total += BigInt(withdrawal.amount || '0');
+        }
+
+        // 상세 정보 저장 (옵션)
+        if (includeDetails) {
+          allEvents = allEvents.concat(events);
+        }
+
+        console.log(`  📄 Page ${pageCount}: ${events.length} withdrawal events, Total so far: ${parseFloat(total.toString()) / 1e27}`);
+
+        // 다음 페이지 확인
+        if (events.length < pageSize) {
+          hasMore = false;
+        } else {
+          // desc 정렬이므로 가장 작은 timestamp를 사용
+          lastTimestamp = events[events.length - 1].timestamp;
+        }
+      }
+
+      // 상세 정보를 포함하는 경우 객체 반환, 아니면 문자열만 반환
+      if (includeDetails) {
+        return {
+          totalAmount: total.toString(),
+          totalAmountDecimal: parseFloat(total.toString()) / 1e27,
+          eventCount: allEvents.length,
+          events: allEvents
+        };
+      }
+
+      return total.toString();
+    } catch (error) {
+      console.error(`Error fetching withdrawals amount: ${error.message}`);
+      if (includeDetails) {
+        return {
+          totalAmount: '0',
+          totalAmountDecimal: 0,
+          eventCount: 0,
+          events: []
+        };
+      }
+      return '0';
+    }
+  }
 }
 
 module.exports = SubgraphClient;

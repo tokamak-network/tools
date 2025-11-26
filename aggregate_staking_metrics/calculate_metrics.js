@@ -280,17 +280,32 @@ async function calculateMetricsForDate(web3, subgraph, date, previousBlock, curr
     }
     console.log('  metrics.additional_staking_amount : ', metrics.additional_staking_amount);
     console.log('  metrics.additional_staking_amount_decimal : ', metrics.additional_staking_amount_decimal);
-    // 7. Withdrawal Amount (WithdrawalAndDeposited events)
+    // 7. Withdrawal Amount (WithdrawalAndDeposited events + Withdrawals events)
     if (previousBlock && metrics.blocks_in_period > 0) {
       console.log('  📤 Getting withdrawal amount from subgraph...');
-      metrics.withdrawal_amount = await subgraph.getTotalWithdrawalAndDepositedAmount(previousBlock, currentBlock);
+
+      // WithdrawalAndDeposited 이벤트
+      const withdrawalAndDepositedAmount = await subgraph.getTotalWithdrawalAndDepositedAmount(previousBlock, currentBlock);
+
+      // Withdrawals 이벤트
+      console.log('  📤 Getting withdrawals amount from subgraph...');
+      const withdrawalsAmount = await subgraph.getTotalWithdrawalsAmount(previousBlock, currentBlock);
+
+      // 두 이벤트 합산
+      const totalWithdrawal = BigInt(withdrawalAndDepositedAmount || '0') + BigInt(withdrawalsAmount || '0');
+      metrics.withdrawal_amount = totalWithdrawal.toString();
       metrics.withdrawal_amount_decimal = parseFloat(metrics.withdrawal_amount) / 1e27;
+
+      console.log(`    WithdrawalAndDeposited: ${withdrawalAndDepositedAmount}`);
+      console.log(`    Withdrawals: ${withdrawalsAmount}`);
+      console.log(`    Total: ${metrics.withdrawal_amount}`);
     } else {
       metrics.withdrawal_amount = '0';
       metrics.withdrawal_amount_decimal = 0;
     }
     console.log('  metrics.withdrawal_amount : ', metrics.withdrawal_amount);
     console.log('  metrics.withdrawal_amount_decimal : ', metrics.withdrawal_amount_decimal);
+
     // 8. Pending Withdrawal (2 weeks)
     console.log('  ⏳ Getting pending withdrawal amount...');
     metrics.pending_withdrawal_2weeks = await getPendingWithdrawalAmount(web3, currentBlock);
@@ -517,6 +532,8 @@ async function main() {
   console.log(`📄 Output file: ${csvFilename}`);
   console.log(`📊 Total records: ${allMetrics.length}`);
   console.log('='.repeat(80));
+
+  return csvFilename;
 }
 
 // 스크립트 실행

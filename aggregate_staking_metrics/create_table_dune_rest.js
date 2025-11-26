@@ -12,13 +12,14 @@ require('dotenv').config();
 
 // 설정
 const DUNE_API_KEY = process.env.DUNE_API_KEY;
-const DUNE_WORKSPACE = process.env.DUNE_WORKSPACE || 'zena_team_5836';
+const DEFAULT_DUNE_WORKSPACE = 'zena_team_5836'; // 기본 workspace 이름 (환경변수로 변경 가능)
+const DUNE_WORKSPACE = process.env.DUNE_WORKSPACE || DEFAULT_DUNE_WORKSPACE;
 
 // 테이블 스키마 정의
 const TABLE_SCHEMA = {
   columns: [
     { name: 'date', type: 'DATE' },
-    { name: 'criterion_block_number', type: 'BIGINT' },
+    { name: 'criterion_block_number', type: 'BIGINT', unique: true },
     { name: 'previous_block_number', type: 'BIGINT' },
     { name: 'blocks_in_period', type: 'BIGINT' },
     { name: 'total_supply_ton', type: 'DOUBLE PRECISION' },
@@ -52,7 +53,7 @@ async function createTableViaRESTAPI(tableName, schema) {
 
   // namespace와 table_name 분리
   // tableName이 "tokamak.basic_staking_metrics" 형식이면 분리
-  // 하지만 실제 권한이 있는 namespace는 DUNE_WORKSPACE (zena_team_5836)이므로 이를 사용
+  // 하지만 실제 권한이 있는 namespace는 DUNE_WORKSPACE이므로 이를 사용
   let namespace, table_name;
   if (tableName.includes('.')) {
     const parts = tableName.split('.');
@@ -82,11 +83,18 @@ async function createTableViaRESTAPI(tableName, schema) {
       type = 'varchar';
     }
 
-    return {
+    const colDef = {
       name: col.name,
       type: type,
       nullable: true
     };
+
+    // criterion_block_number에 unique 속성 추가 시도
+    if (col.name === 'criterion_block_number' && col.unique) {
+      colDef.unique = true;
+    }
+
+    return colDef;
   });
 
   const payload = {
@@ -166,6 +174,118 @@ async function createTableViaRESTAPI(tableName, schema) {
 }
 
 /**
+ * 인덱스 및 제약조건 생성
+ */
+async function createIndexesAndConstraints(tableName) {
+  const tableNameEscaped = `${DUNE_WORKSPACE}.${tableName}`;
+
+  // SQL 쿼리들
+  const queries = [
+    // UNIQUE 제약조건: criterion_block_number는 중복되지 않아야 함
+    `ALTER TABLE ${tableNameEscaped} ADD CONSTRAINT ${tableName}_criterion_block_number_unique UNIQUE (criterion_block_number);`,
+    // 인덱스: date로 빠른 조회
+    `CREATE INDEX IF NOT EXISTS ${tableName}_date_idx ON ${tableNameEscaped} (date);`,
+    // 인덱스: criterion_block_number로 빠른 조회 (UNIQUE 제약조건이 이미 인덱스를 생성하지만 명시적으로 추가)
+    `CREATE INDEX IF NOT EXISTS ${tableName}_criterion_block_number_idx ON ${tableNameEscaped} (criterion_block_number);`
+  ];
+
+  for (let i = 0; i < queries.length; i++) {
+    const query = queries[i];
+    console.log(`   🔄 Executing query ${i + 1}/${queries.length}...`);
+
+    try {
+      const result = await executeQueryViaRESTAPI(query);
+
+      if (result.success) {
+        console.log(`   ✅ Query ${i + 1} executed successfully`);
+      } else {
+        // 이미 존재하는 경우는 경고만 출력
+        if (result.error && (result.error.includes('already exists') || result.error.includes('duplicate'))) {
+          console.log(`   ⚠️  Query ${i + 1}: ${result.error} (may already exist)`);
+        } else {
+          console.error(`   ❌ Query ${i + 1} failed: ${result.error}`);
+        }
+      }
+    } catch (error) {
+      console.error(`   ❌ Query ${i + 1} error: ${error.message}`);
+    }
+  }
+}
+
+/**
+ * Dune REST API를 사용하여 SQL 쿼리 실행
+ */
+async function executeQueryViaRESTAPI(query) {
+  const url = 'https://api.dune.com/api/v1/query';
+
+  const payload = {
+    query_sql: query,
+    parameters: []
+  };
+
+  const headers = {
+    'X-DUNE-API-KEY': DUNE_API_KEY,
+    'Content-Type': 'application/json'
+  };
+
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(url);
+    const options = {
+      hostname: urlObj.hostname,
+      port: urlObj.port || 443,
+      path: urlObj.pathname,
+      method: 'POST',
+      headers: headers
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      res.on('end', () => {
+        try {
+          const response = JSON.parse(data);
+
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve({
+              success: true,
+              statusCode: res.statusCode,
+              response: response
+            });
+          } else {
+            resolve({
+              success: false,
+              statusCode: res.statusCode,
+              error: response.error || response.message || `HTTP ${res.statusCode}`,
+              response: response
+            });
+          }
+        } catch (error) {
+          resolve({
+            success: false,
+            error: `Failed to parse response: ${error.message}`,
+            rawResponse: data
+          });
+        }
+      });
+    });
+
+    req.on('error', (error) => {
+      resolve({
+        success: false,
+        error: error.message
+      });
+    });
+
+    req.write(JSON.stringify(payload));
+    req.end();
+  });
+}
+
+/**
  * 메인 실행 함수
  */
 async function main() {
@@ -185,7 +305,7 @@ async function main() {
   console.log();
 
   // 테이블 이름: namespace는 DUNE_WORKSPACE를 사용하므로 테이블 이름만 지정
-  // 실제 생성되는 테이블: zena_team_5836.basic_staking_metrics
+  // 실제 생성되는 테이블: ${DUNE_WORKSPACE}.basic_staking_metrics
   const tableName = 'basic_staking_metrics'; // 원래 이름은 유지하되, namespace는 DUNE_WORKSPACE 사용
 
   console.log('🔌 Attempting to create table via Dune REST API...');
@@ -204,6 +324,13 @@ async function main() {
       if (result.response) {
         console.log(`   Response:`, JSON.stringify(result.response, null, 2));
       }
+
+      console.log('\n📊 Duplicate Prevention:');
+      console.log('   ⚠️  Note: Dune Analytics does not support ALTER TABLE or CREATE INDEX.');
+      console.log('   Duplicate prevention is handled in the upload script.');
+      console.log('   The upload script will use INSERT with conflict handling.');
+      console.log('   If duplicates occur, they will be skipped automatically.');
+
       console.log('='.repeat(80));
     } else {
       console.log('❌ FAILED: Table creation via REST API failed');

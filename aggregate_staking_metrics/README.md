@@ -267,7 +267,7 @@ This command creates the following files in `dune_ready/` directory:
 
 1. Log in to Dune Analytics
 2. Go to **Data** → **Custom Tables**
-3. Select table `zena_team_5836.basic_staking_metrics` (must already exist)
+3. Select table `project_eco_test.basic_staking_metrics` (must already exist)
 4. Click **Import CSV** or **Upload Data**
 5. Select `dune_ready/basic_staking_metrics_*.csv` file
 6. Auto-detect or manually set column types

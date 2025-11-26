@@ -48,7 +48,7 @@ async function main() {
   }
 
   // 시작 날짜 설정 (2025년 11월부터 현재까지)
-  const startDate = new Date('2025-11-21T00:00:00Z'); // 2025년 11월 21일 00:00 UTC
+  const startDate = new Date('2025-11-01T00:00:00Z'); // 2025년 11월 1일 00:00 UTC
   const today = new Date();
   const endDate = new Date(Date.UTC(
     today.getUTCFullYear(),
