@@ -309,7 +309,7 @@ class SubgraphClient {
   }
 
   /**
-   * 특정 기간의 Withdrawals 이벤트 합계 (페이지네이션 지원)
+   * 특정 기간의 Unstakeds 이벤트 합계 (페이지네이션 지원)
    * @param {number|string} fromBlock - 시작 블록 번호
    * @param {number|string} toBlock - 종료 블록 번호
    * @param {boolean} includeDetails - 상세 정보 포함 여부
@@ -330,7 +330,7 @@ class SubgraphClient {
         // timestamp 기준으로 desc 정렬하므로, timestamp_lt를 사용하여 페이지네이션
         const query = lastTimestamp ? `
           query ($fromBlock: BigInt!, $toBlock: BigInt!, $first: Int!, $lastTimestamp: BigInt!) {
-            withdrawals(
+            unstakeds(
               where: {
                 transaction_: {
                   blockNumber_gte: $fromBlock
@@ -346,21 +346,15 @@ class SubgraphClient {
               amount
               timestamp
               eventName
-              user {
-                id
-              }
-              candidate {
-                name
-              }
               transaction {
-                id
                 blockNumber
+                id
               }
             }
           }
         ` : `
           query ($fromBlock: BigInt!, $toBlock: BigInt!, $first: Int!) {
-            withdrawals(
+            unstakeds(
               where: {
                 transaction_: {
                   blockNumber_gte: $fromBlock
@@ -375,15 +369,9 @@ class SubgraphClient {
               amount
               timestamp
               eventName
-              user {
-                id
-              }
-              candidate {
-                name
-              }
               transaction {
-                id
                 blockNumber
+                id
               }
             }
           }
@@ -410,16 +398,16 @@ class SubgraphClient {
           throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
         }
 
-        if (!result.data?.withdrawals || result.data.withdrawals.length === 0) {
+        if (!result.data?.unstakeds || result.data.unstakeds.length === 0) {
           hasMore = false;
           break;
         }
 
-        const events = result.data.withdrawals;
+        const events = result.data.unstakeds;
 
         // 금액 합산
-        for (const withdrawal of events) {
-          total += BigInt(withdrawal.amount || '0');
+        for (const unstaked of events) {
+          total += BigInt(unstaked.amount || '0');
         }
 
         // 상세 정보 저장 (옵션)
@@ -427,7 +415,7 @@ class SubgraphClient {
           allEvents = allEvents.concat(events);
         }
 
-        console.log(`  📄 Page ${pageCount}: ${events.length} withdrawal events, Total so far: ${parseFloat(total.toString()) / 1e27}`);
+        console.log(`  📄 Page ${pageCount}: ${events.length} unstaked events, Total so far: ${parseFloat(total.toString()) / 1e27}`);
 
         // 다음 페이지 확인
         if (events.length < pageSize) {
@@ -450,7 +438,7 @@ class SubgraphClient {
 
       return total.toString();
     } catch (error) {
-      console.error(`Error fetching withdrawals amount: ${error.message}`);
+      console.error(`Error fetching unstakeds amount: ${error.message}`);
       if (includeDetails) {
         return {
           totalAmount: '0',
