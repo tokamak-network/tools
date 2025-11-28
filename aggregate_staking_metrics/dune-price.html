@@ -1,25 +1,126 @@
-<html>
-- Total TON Supply <br/>
-<iframe src="https://dune.com/embeds/3221097/5385862"></iframe>
-<p></p>
-- Staked TON<br/>
-<iframe src="https://dune.com/embeds/3298440/5522961"></iframe>
-<p></p>
-- TON Price<br/>
-<iframe src="https://dune.com/embeds/3206902/5360794"></iframe>
-<p></p>
-- Circulating Supply (Upper Estimate)<br/>
-<iframe src="https://dune.com/embeds/3298417/5522925"></iframe>
-<p></p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tokamak Network Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 15px;
+            color: #333;
+        }
 
-- Circulating Supply (Upbit Standard: consider staked TON as circulating supply)<br/>
-<iframe src="https://dune.com/embeds/3292797/5512370"></iframe>
-<p></p>
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
 
-- Market Cap (Upper Estimate)<br/>
-<iframe src="https://dune.com/embeds/3298426/5522941"></iframe>
-<p></p>
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        header h1 {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 10px; /* 카드 내부 여백 최소화 */
+            border: 1px solid #e1e4e8;
+        }
+
+        .chart-title {
+            font-size: 0.9rem; /* 제목 작게 */
+            font-weight: 700;
+            color: #555;
+            margin-bottom: 8px;
+            border-left: 3px solid #3498db;
+            padding-left: 6px;
+            white-space: nowrap; /* 제목 한 줄로 */
+            overflow: hidden;
+            text-overflow: ellipsis; /* 너무 길면 ... 처리 */
+        }
 
 
+        iframe {
+            width: 100%;
+            height: 240px; /* 높이를 확 줄여서 컴팩트하게 */
+            border: none;
+            border-radius: 4px;
+        }
 
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(2, 1fr); /* 태블릿에선 2개 */
+            }
+        }
+        @media (max-width: 600px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr; /* 모바일에선 1개 */
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Tokamak Network Indicators</h1>
+    </header>
+
+    <div class="dashboard-grid">
+
+        <!-- 1. Total Supply -->
+        <div class="chart-card">
+            <div class="chart-title">Total TON Supply</div>
+            <iframe src="https://dune.com/embeds/3221097/5385862"></iframe>
+        </div>
+
+        <!-- 2. Staked TON -->
+        <div class="chart-card">
+            <div class="chart-title">Staked TON</div>
+            <iframe src="https://dune.com/embeds/3298440/5522961"></iframe>
+        </div>
+
+        <!-- 3. TON Price -->
+        <div class="chart-card">
+            <div class="chart-title">TON Price</div>
+            <iframe src="https://dune.com/embeds/3206902/5360794"></iframe>
+        </div>
+
+        <!-- 4. Circulating (Upper) -->
+        <div class="chart-card">
+            <div class="chart-title">Circulating Supply (Upper Estimate)</div>
+            <iframe src="https://dune.com/embeds/3298417/5522925"></iframe>
+        </div>
+
+        <!-- 5. Circulating (Upbit) -->
+        <div class="chart-card">
+            <div class="chart-title">Circulating Supply (Upbit Std)</div>
+            <iframe src="https://dune.com/embeds/3292797/5512370"></iframe>
+        </div>
+
+        <!-- 6. Market Cap -->
+        <div class="chart-card">
+            <div class="chart-title">Market Cap (Upper Estimate)</div>
+            <iframe src="https://dune.com/embeds/3298426/5522941"></iframe>
+        </div>
+
+    </div>
+</div>
+
+</body>
 </html>
